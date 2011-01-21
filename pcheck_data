@@ -1,0 +1,151 @@
+#!/bin/sh
+
+# text color variables for formatting
+txtund=$(tput sgr 0 1)    # Underline
+txtbld=$(tput bold)       # Bold
+txtred=$(tput setaf 1)    # Red
+txtgrn=$(tput setaf 2)    # Green
+txtylw=$(tput setaf 3)    # Yellow
+txtblu=$(tput setaf 4)    # Blue
+txtpur=$(tput setaf 5)    # Purple
+txtcyn=$(tput setaf 6)    # Cyan
+txtwht=$(tput setaf 7)    # White
+txtrst=$(tput sgr0)       # Text reset
+
+
+# collected paths
+SHE_COLLECTED_PATHS=($SHE_PATH)
+HDA_COLLECTED_PATHS=($HDA_TIMEOUT_PATH $HDA_ACTIVE_PATH)
+LAPTOP_MODE_COLLECTED_PATHS=($LAPTOP_MODE_PATH)
+PCIE_COLLECTED_PATHS=($PCIE_PATH)
+SATA_COLLECTED_PATHS=($SATA_PATH)
+DEVICE_PM_COLLECTED_PATHS=($DEVICE_PM_PCI_PATH $DEVICE_PM_I2C_PATH $DEVICE_PM_SPI_PATH)
+CPU_COLLECTED_PATHS=($CPU_PATH)
+USB_COLLECTED_PATHS=($USB_TIMEOUT_PATH $USB_ACTIVE_PATH)
+WIFI_COLLECTED_PATHS=()
+
+
+# retreive the system's current power management values for those
+# components specified in the pcheck.conf file and found to exist on the
+# system
+for i in ${FEATURES[@]}; do
+  
+  if [[ $i == SHE ]]; then
+    for i in $SHE_PATH; do
+      if [[ -f $i ]]; then
+        SHE_DATA+=($(cat $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == HDA ]]; then
+    for i in $HDA_TIMEOUT_PATH $HDA_ACTIVE_PATH; do
+      if [[ -f $i ]]; then
+        HDA_DATA+=($(cat $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == LAPTOP_MODE ]]; then
+    for i in $LAPTOP_MODE_PATH; do
+      if [[ -f $i ]]; then
+        LAPTOP_MODE_DATA+=($(cat $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == PCIE ]]; then
+    for i in $PCIE_PATH; do
+      if [[ -f $i ]]; then
+        PCIE_DATA+=($(awk '{print $0}' $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == SATA ]]; then
+    for i in $SATA_PATH; do
+      if [[ -f $i ]]; then
+        SATA_DATA+=($(cat $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == DEVICE_PM ]]; then
+    for i in $DEVICE_PM_PCI_PATH $DEVICE_PM_I2C_PATH $DEVICE_PM_SPI_PATH; do
+      if [[ -f $i ]]; then
+        DEVICE_PM_DATA+=($(cat $i))
+      fi
+    done 
+  fi
+  
+  if [[ $i == CPU ]]; then
+    for i in $CPU_PATH; do
+      if [[ -f $i ]]; then
+        CPU_DATA+=($(cat $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == USB ]]; then
+    for i in $USB_TIMEOUT_PATH $USB_ACTIVE_PATH; do
+      if [[ -f $i ]]; then
+        USB_DATA+=($(cat $i))
+      fi
+    done
+  fi
+  
+  if [[ $i == WIFI ]]; then
+    WIFI_DATA=($(iwconfig $WIFI_INTERFACE | awk '/Power\ Man/ {print $1,$2}'))
+  fi
+
+done
+
+
+# the full power management values specified by the POWERSAVE profile
+SHE_POWERSAVE_DATA=("$SHE_PS")
+
+HDA_POWERSAVE_DATA=("$HDA_TIMEOUT_PS $HDA_ACTIVE_PS")
+
+LAPTOP_MODE_POWERSAVE_DATA=("$LAPTOP_MODE_PS")
+
+PCIE_POWERSAVE_DATA=("$PCIE_PS")
+
+SATA_POWERSAVE_DATA=($(for i in $SATA_PATH; do if [[ -f $i ]]; then echo "$SATA_PS"; fi; done))
+
+DEVICE_PM_POWERSAVE_DATA=($(for i in $DEVICE_PM_PCI_PATH; do if [[ -f $i ]]; then echo "$DEVICE_PM_PCI_PS"; fi; done) \
+                          $(for i in $DEVICE_PM_I2C_PATH; do if [[ -f $i ]]; then echo "$DEVICE_PM_I2C_PS"; fi; done) \
+                          $(for i in $DEVICE_PM_SPI_PATH; do if [[ -f $i ]]; then echo "$DEVICE_PM_SPI_PS"; fi; done))
+
+CPU_POWERSAVE_DATA=($(for i in $CPU_PATH; do if [[ -f $i ]]; then echo "$CPU_PS"; fi; done))
+
+USB_POWERSAVE_DATA=($(for i in $USB_TIMEOUT_PATH; do if [[ -f $i ]]; then echo "$USB_TIMEOUT_PS"; fi; done) \
+                    $(for i in $USB_ACTIVE_PATH; do if [[ -f $i ]]; then echo "$USB_ACTIVE_PS"; fi; done))
+
+WIFI_POWERSAVE_DATA=("$WIFI_PS")
+
+
+
+# the full power management values specified by the PERFORMANCE profile
+SHE_PERFORMANCE_DATA=("$SHE_PER")
+
+HDA_PERFORMANCE_DATA=("$HDA_TIMEOUT_PER $HDA_ACTIVE_PER")
+
+LAPTOP_MODE_PERFORMANCE_DATA=("$LAPTOP_MODE_PER")
+
+PCIE_PERFORMANCE_DATA=("$PCIE_PER")
+
+SATA_PERFORMANCE_DATA=($(for i in $SATA_PATH; do if [[ -f $i ]]; then echo "$SATA_PER"; fi; done))
+
+DEVICE_PM_PERFORMANCE_DATA=($(for i in $DEVICE_PM_PCI_PATH; do if [[ -f $i ]]; then echo "$DEVICE_PM_PCI_PER"; fi; done) \
+                            $(for i in $DEVICE_PM_I2C_PATH; do if [[ -f $i ]]; then echo "$DEVICE_PM_I2C_PER"; fi; done) \
+                            $(for i in $DEVICE_PM_SPI_PATH; do if [[ -f $i ]]; then echo "$DEVICE_PM_SPI_PER"; fi; done))
+
+CPU_PERFORMANCE_DATA=($(for i in $CPU_PATH; do if [[ -f $i ]]; then echo "$CPU_PER"; fi; done))
+
+USB_PERFORMANCE_DATA=($(for i in $USB_TIMEOUT_PATH; do if [[ -f $i ]]; then echo "$USB_TIMEOUT_PER"; fi; done) \
+                      $(for i in $USB_ACTIVE_PATH; do if [[ -f $i ]]; then echo "$USB_ACTIVE_PER"; fi; done))
+
+WIFI_PERFORMANCE_DATA=("$WIFI_PER")
+
+
+

@@ -1,0 +1,113 @@
+#!/bin/sh
+
+
+current_values_summary()
+{
+	# returns the current value of each named feature
+	
+	index=0
+
+    echo
+    printf '%-30s %-50s\n\n' "${txtund}Feature${txtrst}" "${txtund}Current Value${txtrst}" 
+    while [[ "$index" -lt "${#FEATURES[@]}" ]]; do
+      for i in ${FEATURES[@]}; do
+        temp=($(eval echo \${${i}_DATA[@]}))
+        printf '%-15s %-50s\n' "${FEATURES[$index]}" "$(echo ${temp[@]})"
+        (( index +=1 ))
+      done
+    done
+    echo
+}
+
+
+
+
+report_power_status()
+{
+	# reports whether each of the named features are in powersave,
+	# performace or neither
+	
+	index=0
+
+    echo
+    printf '%-30s %-15s\n\n' "${txtund}Feature${txtrst}" "${txtund}Profile${txtrst}" 
+    while [[ "$index" -lt "${#FEATURES[@]}" ]]; do
+      for i in ${FEATURES[@]}; do
+        temp1=($(eval echo \${${i}_DATA[@]})) # current value
+        temp2=($(eval echo \${${i}_POWERSAVE_DATA[@]})) # powersave profile value
+        temp3=($(eval echo \${${i}_PERFORMANCE_DATA[@]})) # performance profile value  
+        if [[ "${temp1[@]}" == "${temp2[@]}" ]]; then
+          printf '%-15s %-15s\n' "$i" "${txtgrn}powersave${txtrst}"
+          (( index +=1 ))
+        elif [[ "${temp1[@]}" == "${temp3[@]}" ]]; then
+          printf '%-15s %-15s\n' "$i" "${txtred}performance${txtrst}"
+          (( index +=1 ))
+        else
+          printf '%-15s %-15s\n' "$i" "undetermined" 
+          (( index +=1 ))
+        fi
+      done
+    done
+    echo
+}
+          
+    
+
+report_named_component()
+{
+	var=$(echo "$1" | tr "[:lower:]" "[:upper:]")
+	
+	echo
+	printf "Status report for: ${txtund}$var${txtrst}\n\n"
+	printf '%-20s %-15s\n' "Current value:" "$(echo $(eval echo \${${var}_DATA[@]}))"   
+	printf '%-20s %-15s\n' "Powersave value:" "$(echo $(eval echo \${${var}_POWERSAVE_DATA[@]}))" 
+	printf '%-20s %-15s\n\n' "Performance value:" "$(echo $(eval echo \${${var}_PERFORMANCE_DATA[@]}))" 
+	if [[ $(eval echo \${#${var}_COLLECTED_PATHS[@]}) > 0 && -f $(eval echo \${${var}_COLLECTED_PATHS[0]}) ]]; then
+	  printf '%-20s %-15s\n' "Control path(s):" "$(echo $(eval echo \${${var}_COLLECTED_PATHS[0]}))" 
+	  for i in $(eval echo \${${var}_COLLECTED_PATHS[@]:1}); do
+	    if [[ -f $i ]]; then
+	      printf '%-20s %-15s\n' "" "$i"
+	    fi
+	  done
+	else
+	  printf '%-20s %-15s\n' "Control path(s):" "N/A"
+	fi
+	echo
+}
+	      
+
+
+usage()
+{
+
+	# Prints a guide to command line options		
+    echo
+    printf "This is $PROGRAM version $VERSION\n\n"
+    echo "${txtund}USAGE${txtrst}: ${txtbld}$PROGRAM${txtrst} [options]"
+    echo 
+    printf '%-20s%-60s \n' "-h, --help" "print this help, then exit"
+    printf '%-20s%-60s \n' "-d, --details" "returns a summary of the current power values for all components"
+    printf '%-20s%-60s \n\n' "-c, --components" "returns a list of the components pcheck can query"
+    printf "Without options, $PROGRAM returns a summary of the system's powersave status\nin relation to the POWERSAVE and PERFORMANCE profiles specified in pcheck.conf.\n" 
+    echo
+}
+
+
+list_components()
+{
+	echo
+    printf "%-35s%-60s \n\n" "${txtund}Component${txtrst}" "${txtund}Inclusion provides information on${txtrst}:"
+    printf "%-20s%-60s \n" "she" "super hybrid engine found on asus eeepc"
+    printf "%-20s%-60s \n" "hda" "intel hda audio"
+    printf "%-20s%-60s \n" "laptop_mode" "kernel laptop-mode"
+    printf "%-20s%-60s \n" "pcie" "pci express power saving"
+    printf "%-20s%-60s \n" "sata" "sata power saving"
+    printf "%-20s%-60s \n" "device_pm" "pci, i2c, etc device power management status"
+    printf "%-20s%-60s \n" "cpu" "cpu scaling governor"
+    printf "%-20s%-60s \n" "usb" "usb autosuspend"
+    printf "%-20s%-60s \n" "wifi" "wireless power saving"
+    echo
+    printf "Status of individual components can be queried with: ${txtbld}pcheck${txtrst} [component]\n\n"
+}
+	
+
